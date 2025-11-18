@@ -17,6 +17,20 @@ class Pak
 
     static var mounted:Array<Pak> = [];
 
+    /**
+     * Opens an `antpak` file from a specified file path and returns a new `Pak` instance.
+     * 
+     * If `stream` is true, only the basic info will be loaded upon creation.
+     * Assets are loaded on demand and cached for later re-use.
+     * 
+     * If `stream` is false, the `Pak` will load immediately load all assets into memory.
+     * It will call the `close()` method immediately after the constructor, 
+     * as there is no need to keep an active file handle if everything is loaded into memory.
+     * 
+     * @param path The file path to the `Pak`.
+     * @param stream Whether the `Pak` should be streamed or not.
+     * @return Pak
+     */
     public static function mount(path:String, stream:Bool):Pak
     {
         var p = new Pak(path, stream);
@@ -24,9 +38,15 @@ class Pak
         return p;
     }
 
+    /**
+     * Closes a `Pak` instance and unloads all memory related to it.
+     * 
+     * @param pak The `Pak` to close.
+     */
     public static function unmount(pak:Pak):Void
     {
         pak.close();
+        pak.unload();
         mounted.remove(pak);
     }
 
@@ -80,9 +100,17 @@ class Pak
 
             _entries[id] = entry;
         }
+
+        if (!stream)
+            close();
     }
 
-    public function getAllAssetIDs():Array<String>
+    /**
+     * Returns an array of all asset IDs contained in this `Pak`.
+     * 
+     * @return An array of all asset IDs contained in this `Pak`.
+     */
+    public function list():Array<String>
     {
         var names:Array<String> = [];
         for (k in _entries.keys())
@@ -107,22 +135,46 @@ class Pak
         _file = null;
     }
 
+    /**
+     * Unloads all memory associated with this `Pak` object.
+     */
     public function unload():Void
     {
         _entries.clear();
         _entries = null;
     }
 
+    /**
+     * Checks whether the provided asset ID exists in this `Pak`.
+     * @param path The asset ID.
+     * @return `true` if the asset ID exists, `false` otherwise.
+     */
     inline public function has(path:String):Bool
     {
         return _entries.exists(_normalizeAssetID(path));
     }
 
+    /**
+     * Checks whether the provided asset ID is loaded and cached.
+     * This will always be `true` when streaming is not used.
+     * 
+     * @param path The asset ID.
+     * @return `true` if the asset is loaded, `false` otherwise.
+     */
     inline public function loaded(path:String):Bool
     {
         return _entries.get(_normalizeAssetID(path))?.data != null;
     }
 
+    /**
+     * Get (and if needed, load) the data for a specific asset.
+     * 
+     * If an asset is compressed or encrypted, it will be uncompressed/decrypted
+     * when it is first loaded.
+     * 
+     * @param path The asset ID.
+     * @return The asset data.
+     */
     public function get(path:String):Bytes
     {
         if (!has(path))

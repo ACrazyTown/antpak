@@ -7,5 +7,7 @@ Also wait it's still a work in progress so you probably shouldn't use it, also w
 ## TODO
 - [ ] Polish up API
 - [ ] Implement missing features
-- [ ] Add example
+- [x] Add example
+- [ ] More robust excludes (wildcard support, etc.)
 - [ ] Lime/OpenFL/Flixel integration?
+    - [x] Flixel 

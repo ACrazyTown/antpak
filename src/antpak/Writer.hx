@@ -205,6 +205,7 @@ class Writer
         o.writeString(s);
     }
 
+    // TODO: wait im kinda dum lol need to clean this up
     function _readDirectoryRecursively(startPath:String, exclude:Array<String>):Array<String>
     {
         var paths:Array<String> = [];
@@ -215,6 +216,8 @@ class Writer
         for (path in read)
         {
             path = startPath + path;
+            if (FileSystem.isDirectory(path))
+                path = Path.addTrailingSlash(path);
 
             if (exclude?.contains(path))
                 continue;

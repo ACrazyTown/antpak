@@ -244,10 +244,10 @@ class Writer
 
     function _normalizeAssetID(id:String):String
     {
-       id = Path.normalize(id);
+        id = Path.normalize(id);
 
         while (id.startsWith("../"))
-            id.substring(3, id.length);
+            id = id.substring(3, id.length);
 
         return id;
     }

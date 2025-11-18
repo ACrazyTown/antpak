@@ -12,17 +12,17 @@ class Main
         var writer:Writer = new Writer();
 
         // We'll add one asset from bytes.
-        writer.add("./assets/dog.png", File.getBytes("./assets/dog.png"));
+        writer.add("../assets/dog.png", File.getBytes("../assets/dog.png"));
 
         // We'll add another using a file path and compress it using the ZIP compression method
-        writer.addAsset("./assets/3d-dog.png", ZIP);
+        writer.addAsset("../assets/3d-dog.png", ZIP);
 
         // We have some more assets left in our assets folder. but so we don't have to add them one by one,
         // we'll use a function to add them recursively. (And we'll also ZIP compression on them too!)
         // The second argument is an excludes array, which lets us add paths to files and directories
         // we DON'T want to include in our PAK.
-        writer.addAssetsRecursively("./assets/more", ["*/.DS_Store", "./assets/more/even-more/catland/", "./assets/more/even-more/cat.txt"], ZIP);
-    
+        writer.addAssetsRecursively("../assets/more", ["*/.DS_Store", "../assets/more/even-more/catland/", "../assets/more/even-more/cat.txt"], ZIP);
+
         // Now that we've added everything we've wanted, we'll use the `write()` method to give us the bytes
         // of the PAK file, and we'll write it to disk.
         var output = writer.write();
@@ -43,7 +43,7 @@ class Main
 
         // Ignore this, it's used to get a properly spaced out print later
         var largestId:String = "";
-        for (id in pak.getAllAssetIDs())
+        for (id in pak.list())
         {
             if (id.length > largestId.length)
                 largestId = id;
@@ -51,11 +51,11 @@ class Main
 
         // Since this is pure Haxe, we can't display any of the images or play the sounds.
         // We'll have to settle for comparing the file hashes to see if the files are the same.
-        for (id in pak.getAllAssetIDs())
+        for (id in pak.list())
         {
             // Get their data,
             var packedData = pak.get(id);
-            var rawData = File.getBytes('./$id');
+            var rawData = File.getBytes('../$id');
 
             // get the hashes,
             var packedHash = Sha1.make(packedData).toHex();

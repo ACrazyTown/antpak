@@ -109,7 +109,7 @@ class FlxPakAssets
 
         for (pak in Pak.mounted)
         {
-            list = list.concat(pak.getAllAssetIDs());
+            list = list.concat(pak.list());
         }
 
         list = list.concat(_list(type));

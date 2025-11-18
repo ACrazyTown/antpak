@@ -16,12 +16,10 @@ class Writer
     final VERSION:Int = 0;
 
     var _entries:Array<EntryData>;
-    var _entryPositions:Map<String, Int>;
 
     public function new() 
     {
         _entries = [];
-        _entryPositions = [];
     }
 
     public function add(bytes:Bytes, id:String):Void
@@ -67,7 +65,6 @@ class Writer
             bytes = _bytes.getBytes();
 
             _entries.resize(0);
-            _entryPositions.clear();
         }
 
         return bytes;
@@ -140,7 +137,6 @@ class Writer
             // length of the file
             o.writeInt32(entry.data.length);
 
-            _entryPositions[entry.id] = position;
             dataLength += entry.data.length;
         }
     }

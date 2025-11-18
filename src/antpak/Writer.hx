@@ -31,6 +31,9 @@ class Writer
     /**
      * Adds a `Bytes` asset to the PAK.
      * 
+     * If an asset ID starts with the directory up prefix (`../`) the prefix
+     * will be removed and the first directory will be treated as a subdirectory of the root.
+     * 
      * @param id A unique id ("path") to the asset.
      * @param bytes The asset data
      * @param compression The compression method for this asset.
@@ -49,6 +52,9 @@ class Writer
     /**
      * Adds an asset to the PAK from a file path.
      * 
+     * If an asset ID starts with the directory up prefix (`../`) the prefix
+     * will be removed and the first directory will be treated as a subdirectory of the root.
+     * 
      * @param path The path to the asset.
      * @param compression The compression method for this asset.
      * @param encryption The encryption method for this asset.
@@ -66,6 +72,9 @@ class Writer
 
     /**
      * Recursively adds all of the assets in a directory (including subdirectories) to the PAK.
+     * 
+     * If an asset ID starts with the directory up prefix (`../`) the prefix
+     * will be removed and the first directory will be treated as a subdirectory of the root.
      * 
      * @param path The path of the directory the assets will be added from.
      * @param exclude A list of excluded directories and file paths.
@@ -235,8 +244,10 @@ class Writer
 
     function _normalizeAssetID(id:String):String
     {
-        if (id.startsWith("./"))
-            return id.substring(2, id.length);
+       id = Path.normalize(id);
+
+        while (id.startsWith("../"))
+            id.substring(3, id.length);
 
         return id;
     }

@@ -1,5 +1,6 @@
 package antpak;
 
+import haxe.io.Path;
 import haxe.zip.Uncompress;
 import antpak.EntryData.ReadEntry;
 import antpak.exceptions.InvalidFileException;
@@ -220,6 +221,8 @@ class Pak
 
     function _normalizeAssetID(id:String):String
     {
+        id = Path.normalize(id);
+
         if (id.startsWith("./"))
             return id.substring(2, id.length);
 

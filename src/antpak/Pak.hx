@@ -1,5 +1,6 @@
 package antpak;
 
+import haxe.zip.Uncompress;
 import antpak.EntryData.ReadEntry;
 import antpak.exceptions.InvalidFileException;
 import haxe.io.Bytes;
@@ -72,13 +73,8 @@ class Pak
             }
 
             // also load the files now if we're not streaming
-            var lastPos = _file.tell();
             if (!stream)
-            {
-                _file.seek(position, SeekBegin);
-                entry.data = _file.read(length);
-                _file.seek(lastPos, SeekBegin);
-            }
+                entry.data = _loadEntry(entry);
 
             _entries[id] = entry;
         }
@@ -127,14 +123,34 @@ class Pak
         }
         else if (_stream)
         {
-            var last = _file.tell();
-            _file.seek(e.filePos, SeekBegin);
-            e.data = _file.read(e.fileLen);
-            _file.seek(last, SeekBegin);
-
-            return e.data;
+            return _loadEntry(e);
         }
 
         return null;
+    }
+
+    function _loadEntry(e:ReadEntry):Bytes
+    {
+        var last = _file.tell();
+        _file.seek(e.filePos, SeekBegin);
+        var data = _file.read(e.fileLen);
+        _file.seek(last, SeekBegin);
+
+        if (e.encryption != null)
+        {
+            throw "TODO";
+        }
+
+        if (e.compression != null)
+        {
+            switch (e.compression)
+            {
+                case ZIP:
+                    data = Uncompress.run(data);
+            }
+        }
+
+        e.data = data;
+        return e.data;
     }
 }

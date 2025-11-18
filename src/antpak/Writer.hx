@@ -1,5 +1,7 @@
 package antpak;
 
+import antpak.EntryData.EncryptionMethod;
+import antpak.EntryData.CompressionMethod;
 import haxe.zip.Compress;
 import antpak.exceptions.FileTooLargeException;
 import antpak.exceptions.NoCryptoException;
@@ -27,16 +29,18 @@ class Writer
 
     }
 
-    public function addAsset(path:String):Void
+    public function addAsset(path:String, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
     {
         var bytes = File.getBytes(path);
         _entries.push({
             id: path,
-            data: bytes
+            data: bytes,
+            compression: compression,
+            encryption: encryption
         });
     }
 
-    public function addAssetRecursively(path:String, exclude:Array<String>):Void
+    public function addAssetRecursively(path:String, ?exclude:Array<String>):Void
     {
 
     }
@@ -74,8 +78,6 @@ class Writer
     {
         for (entry in _entries)
         {
-            final data = entry.data;
-
             // first encrypt
             if (entry.encryption != null)
             {
@@ -91,8 +93,8 @@ class Writer
             {
                 switch (entry.compression)
                 {
-                    // case ZIP:
-                    //    Compress.run()   
+                    case ZIP:
+                        entry.data = Compress.run(entry.data, 6);
                 }
             }
         }

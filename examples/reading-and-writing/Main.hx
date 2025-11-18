@@ -78,8 +78,7 @@ class Main
         // If we've reached this point, that means our PAK has passed the test!
         Sys.println("All good!");
 
-        // Close the internal file handle and unload loaded assets
-        pak.close();
-        pak.unload();
+        // We're done with the PAK, so let's close and unload it.
+        Pak.unmount(pak);
     }
 }

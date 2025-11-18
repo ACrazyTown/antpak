@@ -1,5 +1,7 @@
 package antpak;
 
+import haxe.io.Path;
+import sys.FileSystem;
 import antpak.EntryData.EncryptionMethod;
 import antpak.EntryData.CompressionMethod;
 import haxe.zip.Compress;
@@ -24,11 +26,31 @@ class Writer
         _entries = [];
     }
 
-    public function add(bytes:Bytes, id:String):Void
+    /**
+     * Adds a `Bytes` asset to the PAK.
+     * 
+     * @param id A unique id ("path") to the asset.
+     * @param bytes The asset data
+     * @param compression The compression method for this asset.
+     * @param encryption The encryption method for this asset.
+     */
+    public function add(id:String, bytes:Bytes, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
     {
-
+        _entries.push({
+            id: id,
+            data: bytes,
+            compression: compression,
+            encryption: encryption
+        });
     }
 
+    /**
+     * Adds an asset to the PAK from a file path.
+     * 
+     * @param path The path to the asset.
+     * @param compression The compression method for this asset.
+     * @param encryption The encryption method for this asset.
+     */
     public function addAsset(path:String, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
     {
         var bytes = File.getBytes(path);
@@ -40,9 +62,25 @@ class Writer
         });
     }
 
-    public function addAssetRecursively(path:String, ?exclude:Array<String>):Void
+    /**
+     * Recursively adds all of the assets in a directory (including subdirectories) to the PAK.
+     * 
+     * @param path The path of the directory the assets will be added from.
+     * @param exclude A list of excluded directories and file paths.
+     * @param compression The compression method applied for all added assets.
+     * @param encryption The encryption method applied for all added assets.
+     */
+    public function addAssetsRecursively(path:String, ?exclude:Array<String>, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
     {
-
+        if (FileSystem.isDirectory(path))
+        {
+            var assets = _readDirectoryRecursively(path, exclude);
+            trace(assets);
+            for (assetPath in assets)
+            {
+                addAsset(assetPath, compression, encryption);
+            }
+        }
     }
 
     /**
@@ -164,5 +202,30 @@ class Writer
         var b = Bytes.ofString(s);
         o.writeUInt16(b.length);
         o.writeString(s);
+    }
+
+    function _readDirectoryRecursively(startPath:String, exclude:Array<String>):Array<String>
+    {
+        var paths:Array<String> = [];
+
+        startPath = Path.addTrailingSlash(startPath);
+
+        var read = FileSystem.readDirectory(startPath);
+        for (path in read)
+        {
+            path = startPath + path;
+
+            if (exclude?.contains(path))
+                continue;
+
+            if (!FileSystem.isDirectory(path))
+                paths.push(path);
+            else
+            {
+                paths = paths.concat(_readDirectoryRecursively(path, exclude));
+            }
+        }
+
+        return paths;
     }
 }

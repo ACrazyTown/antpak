@@ -80,6 +80,16 @@ class Pak
         }
     }
 
+    public function getAllAssetIDs():Array<String>
+    {
+        var names:Array<String> = [];
+        for (k in _entries.keys())
+        {
+            names.push(_entries[k].id);
+        }
+        return names;
+    }
+
     /**
      * Closes the internal file handle.
      * 

@@ -14,6 +14,8 @@ import haxe.io.BytesInput;
 import haxe.io.BytesOutput;
 import sys.io.File;
 
+using StringTools;
+
 class Writer
 {
     final HEADER:String = "ANTPAK";
@@ -37,7 +39,7 @@ class Writer
     public function add(id:String, bytes:Bytes, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
     {
         _entries.push({
-            id: id,
+            id: _normalizeAssetID(id),
             data: bytes,
             compression: compression,
             encryption: encryption
@@ -55,7 +57,7 @@ class Writer
     {
         var bytes = File.getBytes(path);
         _entries.push({
-            id: path,
+            id: _normalizeAssetID(path),
             data: bytes,
             compression: compression,
             encryption: encryption
@@ -75,7 +77,6 @@ class Writer
         if (FileSystem.isDirectory(path))
         {
             var assets = _readDirectoryRecursively(path, exclude);
-            trace(assets);
             for (assetPath in assets)
             {
                 addAsset(assetPath, compression, encryption);
@@ -227,5 +228,13 @@ class Writer
         }
 
         return paths;
+    }
+
+    function _normalizeAssetID(id:String):String
+    {
+        if (id.startsWith("./"))
+            return id.substring(2, id.length);
+
+        return id;
     }
 }

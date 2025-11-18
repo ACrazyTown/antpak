@@ -8,6 +8,8 @@ import sys.FileSystem;
 import sys.io.File;
 import sys.io.FileInput;
 
+using StringTools;
+
 class Pak
 {
     inline public static final HEADER:String = "ANTPAK";
@@ -113,12 +115,12 @@ class Pak
 
     inline public function has(path:String):Bool
     {
-        return _entries.exists(path);
+        return _entries.exists(_normalizeAssetID(path));
     }
 
     inline public function loaded(path:String):Bool
     {
-        return _entries.get(path)?.data != null;
+        return _entries.get(_normalizeAssetID(path))?.data != null;
     }
 
     public function get(path:String):Bytes
@@ -126,7 +128,7 @@ class Pak
         if (!has(path))
             return null;
 
-        var e = _entries.get(path);
+        var e = _entries.get(_normalizeAssetID(path));
         if (e?.data != null)
         {
             return e.data;
@@ -162,5 +164,13 @@ class Pak
 
         e.data = data;
         return e.data;
+    }
+
+    function _normalizeAssetID(id:String):String
+    {
+        if (id.startsWith("./"))
+            return id.substring(2, id.length);
+
+        return id;
     }
 }

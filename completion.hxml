@@ -1,2 +1,5 @@
 -cp src
 --interp
+
+# Enables verbose traces in Writer
+-D ANTPAK_VERBOSE_WRITER_WRITER

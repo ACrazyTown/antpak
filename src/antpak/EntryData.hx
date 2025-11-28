@@ -19,9 +19,23 @@ typedef ReadEntry = EntryData &
 enum abstract CompressionMethod(Int) from Int to Int
 {
     var ZIP = 1;
+
+    inline public function supported():Bool
+    {
+        return switch (this) 
+        {
+            case ZIP: true;
+            default: false;
+        }
+    }
 }
 
 enum abstract EncryptionMethod(Int) from Int to Int
 {
     var AES = 1;
+
+    inline public function supported():Bool
+    {
+        return #if crypto true #else false #end;
+    }
 }

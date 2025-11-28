@@ -131,7 +131,7 @@ class Writer
             _writeContents(_bytes);
 
             #if ANTPAK_VERBOSE_WRITER
-            trace("-- Write complete --");
+            trace('-- Write complete (final size: ${_getBytesSize(_bytes.length)}) --');
             #end
 
             bytes = _bytes.getBytes();

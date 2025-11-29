@@ -3,3 +3,4 @@
 
 # Enables verbose traces in Writer
 -D ANTPAK_VERBOSE_WRITER_WRITER
+-L crypto

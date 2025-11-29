@@ -1,9 +1,10 @@
 package antpak;
 
+import antpak.Util;
+import antpak.data.WriteEntry;
 import haxe.io.Path;
 import sys.FileSystem;
-import antpak.EntryData.EncryptionMethod;
-import antpak.EntryData.CompressionMethod;
+import antpak.data.CompressionMethod;
 import haxe.zip.Compress;
 import antpak.exceptions.FileTooLargeException;
 import antpak.exceptions.NoCryptoException;
@@ -21,7 +22,7 @@ class Writer
     final HEADER:String = "ANTPAK";
     final VERSION:Int = 0;
 
-    var _entries:Array<EntryData>;
+    var _entries:Array<WriteEntry>;
 
     public function new() 
     {
@@ -39,18 +40,13 @@ class Writer
      * @param compression The compression method for this asset.
      * @param encryption The encryption method for this asset.
      */
-    public function add(id:String, bytes:Bytes, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
+    public function addBytes(id:String, bytes:Bytes, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         #if ANTPAK_VERBOSE_WRITER
         trace('Registered asset from bytes (ID: $id)');
         #end
 
-        _entries.push({
-            id: _normalizeAssetID(id),
-            data: bytes,
-            compression: compression,
-            encryption: encryption
-        });
+        _entries.push(new WriteEntry(_normalizeAssetID(id), bytes, compression, encryptionKey));
     }
 
     /**
@@ -63,19 +59,14 @@ class Writer
      * @param compression The compression method for this asset.
      * @param encryption The encryption method for this asset.
      */
-    public function addAsset(path:String, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
+    public function addFile(path:String, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         #if ANTPAK_VERBOSE_WRITER
         trace('Registered asset from path (path: $path)');
         #end
 
         var bytes = File.getBytes(path);
-        _entries.push({
-            id: _normalizeAssetID(path),
-            data: bytes,
-            compression: compression,
-            encryption: encryption
-        });
+        _entries.push(new WriteEntry(_normalizeAssetID(path), bytes, compression, encryptionKey));
     }
 
     /**
@@ -89,7 +80,7 @@ class Writer
      * @param compression The compression method applied for all added assets.
      * @param encryption The encryption method applied for all added assets.
      */
-    public function addAssetsRecursively(path:String, ?exclude:Array<String>, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
+    public function addDirectory(path:String, ?exclude:Array<String>, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         if (FileSystem.isDirectory(path))
         {
@@ -100,7 +91,7 @@ class Writer
             var assets = _readDirectoryRecursively(path, exclude);
             for (assetPath in assets)
             {
-                addAsset(assetPath, compression, encryption);
+                addFile(assetPath, compression, encryptionKey);
             }
         }
     }
@@ -131,7 +122,7 @@ class Writer
             _writeContents(_bytes);
 
             #if ANTPAK_VERBOSE_WRITER
-            trace('-- Write complete (final size: ${_getBytesSize(_bytes.length)}) --');
+            trace('-- Write complete (final size: ${Util.getBytesSize(_bytes.length)}) --');
             #end
 
             bytes = _bytes.getBytes();
@@ -150,47 +141,7 @@ class Writer
 
         for (entry in _entries)
         {
-            // first encrypt
-            if (entry.encryption != null)
-            {
-                if (entry.encryption.supported())
-                {
-                    #if ANTPAK_VERBOSE_WRITER
-                    trace('Encrypting bytes (ID: ${entry.id}, method: ${entry.encryption})');
-                    #end
-
-                    throw "TODO";
-                }
-                else
-                    throw new NoCryptoException(entry.id);
-            }
-
-            // then compress
-            if (entry.compression != null)
-            {
-                if (entry.compression.supported())
-                {
-                    #if ANTPAK_VERBOSE_WRITER
-                    var oldSize:Int = entry.data.length;
-                    #end
-
-                    switch (entry.compression)
-                    {
-                        case ZIP:
-                            entry.data = Compress.run(entry.data, 6);
-                    }
-
-                    #if ANTPAK_VERBOSE_WRITER
-                    var oldSizeString:String = _getBytesSize(oldSize);
-                    var newSizeString:String = _getBytesSize(entry.data.length);
-
-                    var diff:Float = _roundToTwoDecimals(((entry.data.length - oldSize) / oldSize) * 100);
-                    trace('Compressed bytes (ID: ${entry.id}, method: ${entry.compression}, size: $oldSizeString -> $newSizeString ($diff%))');
-                    #end
-                }
-                else
-                    throw "TODO";
-            }
+            entry.prepareData();
         }
     }
 
@@ -230,13 +181,13 @@ class Writer
         for (entry in _entries)
         {
             #if ANTPAK_VERBOSE_WRITER
-            trace('Writing entry (ID: ${entry.id}, compression: ${entry.compression},  encryption: ${entry.encryption})');
+            trace('Writing entry (ID: ${entry.id}, compression: ${entry.compression},  encrypted: ${entry.encryptionKey != null})');
             #end
 
             _writeString(o, entry.id);
 
             o.writeByte(entry.compression ?? 0);
-            o.writeByte(entry.encryption ?? 0);
+            o.writeByte(entry.encryptionKey == null ? 0 : 1);
 
             // position of the file
             final position = headerLength + tocLength + dataLength;
@@ -258,7 +209,7 @@ class Writer
         for (entry in _entries)
         {
             #if ANTPAK_VERBOSE_WRITER
-            trace('Writing bytes (ID: ${entry.id}, size: ${_getBytesSize(entry.data.length)}, total PAK size: ${_getBytesSize(o.length + entry.data.length)})');
+            trace('Writing bytes (ID: ${entry.id}, size: ${Util.getBytesSize(entry.data.length)}, total PAK size: ${Util.getBytesSize(o.length + entry.data.length)})');
             #end
 
             o.writeFullBytes(entry.data, 0, entry.data.length);
@@ -316,26 +267,4 @@ class Writer
 
         return id;
     }
-
-    #if ANTPAK_VERBOSE_WRITER
-    function _getBytesSize(bytes:Int):String
-    {
-        var units:Array<String> = ["b", "kb", "mb", "gb"];
-        var unitIndex:Int = 0;
-
-        var size:Float = bytes;
-
-        while (size > 1024) 
-        {
-            size /= 1024;
-            unitIndex++;
-        }
-
-        size = _roundToTwoDecimals(size);
-        return '$size${units[unitIndex]}';
-    }
-
-    function _roundToTwoDecimals(n:Float):Float
-        return Math.fround(n * 100) / 100;
-    #end
 }

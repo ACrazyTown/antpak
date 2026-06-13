@@ -63,7 +63,7 @@ class Pak
         _stream = stream;
         _entries = [];
 
-        _file = File.read(path, stream);
+        _file = File.read(path);
 
         var readHeader = _file.readString(Bytes.ofString(HEADER).length);
         if (readHeader != HEADER)

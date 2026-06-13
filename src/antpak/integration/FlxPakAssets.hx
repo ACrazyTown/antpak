@@ -3,16 +3,16 @@ package antpak.integration;
 #if (!flixel || flixel < version("5.9.0"))
 #error "FlxPakAssets requires HaxeFlixel 5.9.0+"
 #else
+import flixel.FlxBasic;
 import flixel.FlxG;
 import flixel.system.FlxAssets;
-import flixel.FlxBasic;
 import flixel.system.frontEnds.AssetFrontEnd;
-import openfl.display.BitmapData;
-import lime.media.AudioBuffer;
-import openfl.media.Sound;
-import lime.text.Font;
 import haxe.io.Bytes;
 import lime.app.Future;
+import lime.media.AudioBuffer;
+import openfl.display.BitmapData;
+import openfl.media.Sound;
+import openfl.text.Font;
 
 @:access(antpak.Pak)
 class FlxPakAssets

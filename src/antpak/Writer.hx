@@ -115,7 +115,7 @@ class Writer
                 return false;
             }
 
-            var assets = _readDirectoryRecursively(path, exclude);
+            var assets = _readDirectoryRecursively(path);
             for (assetPath in assets)
             {
                 if (filtered(assetPath, exclude))
@@ -283,7 +283,7 @@ class Writer
                 paths.push(path);
             else
             {
-                paths = paths.concat(_readDirectoryRecursively(path, exclude));
+                paths = paths.concat(_readDirectoryRecursively(path));
             }
         }
 

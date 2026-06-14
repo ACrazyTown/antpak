@@ -1,8 +1,9 @@
 package antpak;
 
+import antpak.data.ReadEntry;
 import haxe.io.Path;
 import haxe.zip.Uncompress;
-import antpak.EntryData.ReadEntry;
+// import antpak.EntryData.ReadEntry;
 import antpak.exceptions.InvalidFileException;
 import haxe.io.Bytes;
 import sys.FileSystem;
@@ -22,11 +23,13 @@ class Pak
      * Opens an `antpak` file from a specified file path and returns a new `Pak` instance.
      * 
      * If `stream` is true, only the basic info will be loaded upon creation.
-     * Assets are loaded on demand and cached for later re-use.
+     * Assets are loaded on demand and cached for later re-use. This is **recommended**
+     * for **PAKs with a large amount of assets**.
      * 
      * If `stream` is false, the `Pak` will load immediately load all assets into memory.
      * It will call the `close()` method immediately after the constructor, 
      * as there is no need to keep an active file handle if everything is loaded into memory.
+     * This is **discouraged** for **PAKs with a large amount of assets**.
      * 
      * @param path The file path to the `Pak`.
      * @param stream Whether the `Pak` should be streamed or not.
@@ -85,19 +88,11 @@ class Pak
             var position = _file.readInt32();
             var length = _file.readInt32();
 
-            var entry:ReadEntry =
-            {
-                id: id,
-                encryption: encryption > 0 ? encryption : null,
-                compression: compression > 0 ? compression : null,
-                data: null,
-                filePos: position,
-                fileLen: length
-            }
+            var entry = new ReadEntry(id, compression, null, position, length);
 
             // also load the files now if we're not streaming
             if (!stream)
-                entry.data = _loadEntry(entry);
+                _loadEntry(entry);
 
             _entries[id] = entry;
         }
@@ -194,28 +189,30 @@ class Pak
         return null;
     }
 
+    /**
+     * Removes (unloads) the specified asset data from memory.
+     * Note that the memory decrease might not be instant and relies on when the GC runs.
+     * 
+     * @param path The asset ID.
+     */
+    public function remove(path:String):Void
+    {
+        if (!has(path))
+            return;
+
+        var e = _entries.get(_normalizeAssetID(path));
+        e.unload();
+    }
+
     function _loadEntry(e:ReadEntry):Bytes
     {
         var last = _file.tell();
-        _file.seek(e.filePos, SeekBegin);
-        var data = _file.read(e.fileLen);
+        _file.seek(e.position, SeekBegin);
+        var data = _file.read(e.length);
         _file.seek(last, SeekBegin);
 
-        if (e.encryption != null)
-        {
-            throw "TODO";
-        }
+        e.prepareData(data);
 
-        if (e.compression != null)
-        {
-            switch (e.compression)
-            {
-                case ZIP:
-                    data = Uncompress.run(data);
-            }
-        }
-
-        e.data = data;
         return e.data;
     }
 

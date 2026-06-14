@@ -1,9 +1,10 @@
 package antpak;
 
+import antpak.Util;
+import antpak.data.WriteEntry;
 import haxe.io.Path;
 import sys.FileSystem;
-import antpak.EntryData.EncryptionMethod;
-import antpak.EntryData.CompressionMethod;
+import antpak.data.CompressionMethod;
 import haxe.zip.Compress;
 import antpak.exceptions.FileTooLargeException;
 import antpak.exceptions.NoCryptoException;
@@ -21,7 +22,7 @@ class Writer
     final HEADER:String = "ANTPAK";
     final VERSION:Int = 0;
 
-    var _entries:Array<EntryData>;
+    var _entries:Array<WriteEntry>;
 
     public function new() 
     {
@@ -39,7 +40,7 @@ class Writer
      * @param compression The compression method for this asset.
      * @param encryption The encryption method for this asset.
      */
-    public function add(id:String, bytes:Bytes, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
+    public function addBytes(id:String, bytes:Bytes, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         #if ANTPAK_VERBOSE_WRITER
         trace('Registered asset from bytes (ID: $id)');
@@ -49,7 +50,7 @@ class Writer
             id: _normalizeAssetID(id),
             data: bytes,
             compression: compression,
-            encryption: encryption
+            encKey: encryptionKey
         });
     }
 
@@ -63,7 +64,7 @@ class Writer
      * @param compression The compression method for this asset.
      * @param encryption The encryption method for this asset.
      */
-    public function addAsset(path:String, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
+    public function addFile(path:String, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         #if ANTPAK_VERBOSE_WRITER
         trace('Registered asset from path (path: $path)');
@@ -74,7 +75,7 @@ class Writer
             id: _normalizeAssetID(path),
             data: bytes,
             compression: compression,
-            encryption: encryption
+            encKey: encryptionKey
         });
     }
 
@@ -85,11 +86,11 @@ class Writer
      * will be removed and the first directory will be treated as a subdirectory of the root.
      * 
      * @param path The path of the directory the assets will be added from.
-     * @param exclude A list of excluded directories and file paths.
+     * @param exclude A list of assets/directories to exclude.
      * @param compression The compression method applied for all added assets.
      * @param encryption The encryption method applied for all added assets.
      */
-    public function addAssetsRecursively(path:String, ?exclude:Array<String>, ?compression:CompressionMethod, ?encryption:EncryptionMethod):Void
+    public function addDirectoryRecursive(path:String, ?exclude:Array<String>, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         if (FileSystem.isDirectory(path))
         {
@@ -97,10 +98,35 @@ class Writer
             trace('Registering assets from directory (path: $path)');
             #end
 
-            var assets = _readDirectoryRecursively(path, exclude);
+            function filtered(path:String, exclude:Array<String>):Bool 
+            {
+                for (e in exclude)
+                {
+                    e = e.replace("/", "\\/"); // don't interpet / as a regex pattern
+                    e = e.replace(".", "\\."); // don't interpet . as a regex pattern
+                    e = e.replace("*", ".*");  // .* is regex for however many characters
+
+                    // trace(path, "^" + e + "$");
+                    var r = new EReg("^" + e + "$", "i");
+                    if (r.match(path))
+                        return true;
+                }
+
+                return false;
+            }
+
+            var assets = _readDirectoryRecursively(path);
             for (assetPath in assets)
             {
-                addAsset(assetPath, compression, encryption);
+                if (exclude != null && filtered(assetPath, exclude))
+                {
+                    #if ANTPAK_VERBOSE_WRITER
+                    trace('Excluding asset (path: $assetPath)');
+                    #end
+                    continue;
+                }
+
+                addFile(assetPath, compression, encryptionKey);
             }
         }
     }
@@ -131,7 +157,7 @@ class Writer
             _writeContents(_bytes);
 
             #if ANTPAK_VERBOSE_WRITER
-            trace('-- Write complete (final size: ${_getBytesSize(_bytes.length)}) --');
+            trace('-- Write complete (final size: ${Util.getBytesSize(_bytes.length)}) --');
             #end
 
             bytes = _bytes.getBytes();
@@ -150,47 +176,7 @@ class Writer
 
         for (entry in _entries)
         {
-            // first encrypt
-            if (entry.encryption != null)
-            {
-                if (entry.encryption.supported())
-                {
-                    #if ANTPAK_VERBOSE_WRITER
-                    trace('Encrypting bytes (ID: ${entry.id}, method: ${entry.encryption})');
-                    #end
-
-                    throw "TODO";
-                }
-                else
-                    throw new NoCryptoException(entry.id);
-            }
-
-            // then compress
-            if (entry.compression != null)
-            {
-                if (entry.compression.supported())
-                {
-                    #if ANTPAK_VERBOSE_WRITER
-                    var oldSize:Int = entry.data.length;
-                    #end
-
-                    switch (entry.compression)
-                    {
-                        case ZIP:
-                            entry.data = Compress.run(entry.data, 6);
-                    }
-
-                    #if ANTPAK_VERBOSE_WRITER
-                    var oldSizeString:String = _getBytesSize(oldSize);
-                    var newSizeString:String = _getBytesSize(entry.data.length);
-
-                    var diff:Float = _roundToTwoDecimals(((entry.data.length - oldSize) / oldSize) * 100);
-                    trace('Compressed bytes (ID: ${entry.id}, method: ${entry.compression}, size: $oldSizeString -> $newSizeString ($diff%))');
-                    #end
-                }
-                else
-                    throw "TODO";
-            }
+            entry.prepareData();
         }
     }
 
@@ -230,13 +216,13 @@ class Writer
         for (entry in _entries)
         {
             #if ANTPAK_VERBOSE_WRITER
-            trace('Writing entry (ID: ${entry.id}, compression: ${entry.compression},  encryption: ${entry.encryption})');
+            trace('Writing entry (ID: ${entry.id}, compression: ${entry.compression},  encrypted: ${entry.encryptionKey != null})');
             #end
 
             _writeString(o, entry.id);
 
             o.writeByte(entry.compression ?? 0);
-            o.writeByte(entry.encryption ?? 0);
+            o.writeByte(entry.encryptionKey == null ? 0 : 1);
 
             // position of the file
             final position = headerLength + tocLength + dataLength;
@@ -258,7 +244,7 @@ class Writer
         for (entry in _entries)
         {
             #if ANTPAK_VERBOSE_WRITER
-            trace('Writing bytes (ID: ${entry.id}, size: ${_getBytesSize(entry.data.length)}, total PAK size: ${_getBytesSize(o.length + entry.data.length)})');
+            trace('Writing bytes (ID: ${entry.id}, size: ${Util.getBytesSize(entry.data.length)}, total PAK size: ${Util.getBytesSize(o.length + entry.data.length)})');
             #end
 
             o.writeFullBytes(entry.data, 0, entry.data.length);
@@ -280,7 +266,7 @@ class Writer
     }
 
     // TODO: wait im kinda dum lol need to clean this up
-    function _readDirectoryRecursively(startPath:String, exclude:Array<String>):Array<String>
+    function _readDirectoryRecursively(startPath:String):Array<String>
     {
         var paths:Array<String> = [];
 
@@ -293,14 +279,11 @@ class Writer
             if (FileSystem.isDirectory(path))
                 path = Path.addTrailingSlash(path);
 
-            if (exclude?.contains(path))
-                continue;
-
             if (!FileSystem.isDirectory(path))
                 paths.push(path);
             else
             {
-                paths = paths.concat(_readDirectoryRecursively(path, exclude));
+                paths = paths.concat(_readDirectoryRecursively(path));
             }
         }
 
@@ -316,26 +299,4 @@ class Writer
 
         return id;
     }
-
-    #if ANTPAK_VERBOSE_WRITER
-    function _getBytesSize(bytes:Int):String
-    {
-        var units:Array<String> = ["b", "kb", "mb", "gb"];
-        var unitIndex:Int = 0;
-
-        var size:Float = bytes;
-
-        while (size > 1024) 
-        {
-            size /= 1024;
-            unitIndex++;
-        }
-
-        size = _roundToTwoDecimals(size);
-        return '$size${units[unitIndex]}';
-    }
-
-    function _roundToTwoDecimals(n:Float):Float
-        return Math.fround(n * 100) / 100;
-    #end
 }

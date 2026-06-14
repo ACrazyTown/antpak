@@ -9,7 +9,7 @@ class GeneratePak
     static function main():Void
     {
         var writer:Writer = new Writer();
-        writer.addAssetsRecursively("../assets/", null, ZIP);
+        writer.addDirectoryRecursive("../assets/", null, ZIP);
         final bytes = writer.write();
 
         // TODO: unhardcode path

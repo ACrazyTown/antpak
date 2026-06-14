@@ -37,4 +37,9 @@ class ReadEntry extends Entry
 
         this.data = processed;
     }
+
+    public function unload():Void
+    {
+        data = null;
+    }
 }

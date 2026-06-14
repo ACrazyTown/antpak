@@ -190,14 +190,18 @@ class Pak
     }
 
     /**
-     * Removes (unloads) the specified asset from memory.
+     * Removes (unloads) the specified asset data from memory.
      * Note that the memory decrease might not be instant and relies on when the GC runs.
      * 
      * @param path The asset ID.
      */
     public function remove(path:String):Void
     {
-        _entries.remove(path);
+        if (!has(path))
+            return;
+
+        var e = _entries.get(_normalizeAssetID(path));
+        e.unload();
     }
 
     function _loadEntry(e:ReadEntry):Bytes

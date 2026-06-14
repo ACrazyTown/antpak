@@ -23,11 +23,13 @@ class Pak
      * Opens an `antpak` file from a specified file path and returns a new `Pak` instance.
      * 
      * If `stream` is true, only the basic info will be loaded upon creation.
-     * Assets are loaded on demand and cached for later re-use.
+     * Assets are loaded on demand and cached for later re-use. This is **recommended**
+     * for **PAKs with a large amount of assets**.
      * 
      * If `stream` is false, the `Pak` will load immediately load all assets into memory.
      * It will call the `close()` method immediately after the constructor, 
      * as there is no need to keep an active file handle if everything is loaded into memory.
+     * This is **discouraged** for **PAKs with a large amount of assets**.
      * 
      * @param path The file path to the `Pak`.
      * @param stream Whether the `Pak` should be streamed or not.
@@ -185,6 +187,17 @@ class Pak
         }
 
         return null;
+    }
+
+    /**
+     * Removes (unloads) the specified asset from memory.
+     * Note that the memory decrease might not be instant and relies on when the GC runs.
+     * 
+     * @param path The asset ID.
+     */
+    public function remove(path:String):Void
+    {
+        _entries.remove(path);
     }
 
     function _loadEntry(e:ReadEntry):Bytes

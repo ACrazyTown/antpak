@@ -3,6 +3,7 @@ package antpak.data;
 import haxe.zip.Uncompress;
 import haxe.io.Bytes;
 
+@:structInit
 class ReadEntry extends Entry
 {
     public var position(default, null):Int;
@@ -16,7 +17,7 @@ class ReadEntry extends Entry
         this.length = length;
     }
 
-    override function prepareData(?data:Bytes):Void
+    public function prepareData(?data:Bytes):Void
     {
         var processed:Bytes = data ?? this.data;
 

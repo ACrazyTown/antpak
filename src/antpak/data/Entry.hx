@@ -2,7 +2,7 @@ package antpak.data;
 
 import haxe.io.Bytes;
 
-class Entry
+abstract class Entry
 {
     public var id(default, null):String;
 
@@ -19,5 +19,5 @@ class Entry
         this.encryptionKey = encKey;
     }
 
-    public function prepareData(?data:Bytes):Void {}
+    public abstract function prepareData(?data:Bytes):Void;
 }

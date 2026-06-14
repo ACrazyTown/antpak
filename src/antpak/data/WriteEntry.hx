@@ -8,6 +8,7 @@ import antpak.exceptions.NoCryptoException;
 import haxe.zip.Compress;
 import haxe.io.Bytes;
 
+@:structInit
 class WriteEntry extends Entry
 {
     public function new(id:String, data:Bytes, compression:CompressionMethod, encKey:String)
@@ -16,7 +17,7 @@ class WriteEntry extends Entry
         this.data = data;
     }
 
-    override function prepareData(?data:Bytes):Void 
+    public function prepareData(?data:Bytes):Void 
     {
         var processed:Bytes = data ?? this.data;
 

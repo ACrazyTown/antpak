@@ -46,7 +46,12 @@ class Writer
         trace('Registered asset from bytes (ID: $id)');
         #end
 
-        _entries.push(new WriteEntry(_normalizeAssetID(id), bytes, compression, encryptionKey));
+        _entries.push({
+            id: _normalizeAssetID(id),
+            data: bytes,
+            compression: compression,
+            encKey: encryptionKey
+        });
     }
 
     /**
@@ -66,7 +71,12 @@ class Writer
         #end
 
         var bytes = File.getBytes(path);
-        _entries.push(new WriteEntry(_normalizeAssetID(path), bytes, compression, encryptionKey));
+        _entries.push({
+            id: _normalizeAssetID(path),
+            data: bytes,
+            compression: compression,
+            encKey: encryptionKey
+        });
     }
 
     /**

@@ -10,9 +10,9 @@ Also wait it's still a work in progress so you probably shouldn't use it, also w
 ### HaxeFlixel
 Integration with HaxeFlixel is really simple. After creating your `FlxGame`, call `FlxPakAssets.init()` somewhere. After that, mount your PAKs and use HaxeFlixel as usual. 
 
-For convenience you'd ideally want a way to automatically build the pak with the game. This can be accomplished using the `<postbuild>` tag in Project.xml and an additional Haxe script. See the [Flixel example](examples/flixel-integration) for specifics, or follow these general steps:
+For convenience you'd ideally want a way to automatically build the pak with the game. This can be accomplished using the `<postbuild>` tag in Project.xml and an additional Haxe script. See the [Flixel example](/examples/flixel-integration) for specifics, or follow these general steps:
 1. Install the library via `haxelib git antpak https://github.com/ACrazyTown/antpak`
-2. Copy over [`GeneratePak`](examples\flixel-integration\GeneratePak.hx) and [`gen.hxml`](examples\flixel-integration\gen.hxml) to your top folder
+2. Copy over [`GeneratePak`](/examples/flixel-integration/GeneratePak.hx) and [`gen.hxml`](/examples/flixel-integration/gen.hxml) to your top folder. You will have to adjust some of the parameters in the script according to your project.
 3. Add `<postbuild cmd="haxe gen.hxml"></postbuild>` somewhere in your Project.xml.
 4. In your game code, add `FlxPakAssets.init()` somewhere before the `FlxGame` is created. You should also make sure it is called before any attempts to fetch assets, otherwise you won't be able to fetch assets from PAKs.
 5. Mount your PAK using `Pak.mount(path);`

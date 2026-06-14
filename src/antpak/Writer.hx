@@ -90,7 +90,7 @@ class Writer
      * @param compression The compression method applied for all added assets.
      * @param encryption The encryption method applied for all added assets.
      */
-    public function addDirectory(path:String, ?exclude:Array<String>, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
+    public function addDirectoryRecursive(path:String, ?exclude:Array<String>, compression:CompressionMethod = NONE, ?encryptionKey:String):Void
     {
         if (FileSystem.isDirectory(path))
         {

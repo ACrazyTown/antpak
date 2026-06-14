@@ -86,7 +86,7 @@ class Writer
      * will be removed and the first directory will be treated as a subdirectory of the root.
      * 
      * @param path The path of the directory the assets will be added from.
-     * @param exclude A list of excluded directories and file paths.
+     * @param exclude A list of assets/directories to exclude.
      * @param compression The compression method applied for all added assets.
      * @param encryption The encryption method applied for all added assets.
      */
@@ -98,9 +98,34 @@ class Writer
             trace('Registering assets from directory (path: $path)');
             #end
 
+            function filtered(path:String, exclude:Array<String>):Bool 
+            {
+                for (e in exclude)
+                {
+                    e = e.replace("/", "\\/"); // don't interpet / as a regex pattern
+                    e = e.replace(".", "\\."); // don't interpet . as a regex pattern
+                    e = e.replace("*", ".*");  // .* is regex for however many characters
+
+                    // trace(path, "^" + e + "$");
+                    var r = new EReg("^" + e + "$", "i");
+                    if (r.match(path))
+                        return true;
+                }
+
+                return false;
+            }
+
             var assets = _readDirectoryRecursively(path, exclude);
             for (assetPath in assets)
             {
+                if (filtered(assetPath, exclude))
+                {
+                    #if ANTPAK_VERBOSE_WRITER
+                    trace('Excluding asset (path: $assetPath)');
+                    #end
+                    continue;
+                }
+
                 addFile(assetPath, compression, encryptionKey);
             }
         }
@@ -241,7 +266,7 @@ class Writer
     }
 
     // TODO: wait im kinda dum lol need to clean this up
-    function _readDirectoryRecursively(startPath:String, exclude:Array<String>):Array<String>
+    function _readDirectoryRecursively(startPath:String):Array<String>
     {
         var paths:Array<String> = [];
 
@@ -253,9 +278,6 @@ class Writer
             path = startPath + path;
             if (FileSystem.isDirectory(path))
                 path = Path.addTrailingSlash(path);
-
-            if (exclude?.contains(path))
-                continue;
 
             if (!FileSystem.isDirectory(path))
                 paths.push(path);

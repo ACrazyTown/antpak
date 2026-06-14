@@ -21,7 +21,7 @@ class Main
         // we'll use a function to add them recursively. (And we'll also ZIP compression on them too!)
         // The second argument is an excludes array, which lets us add paths to files and directories
         // we DON'T want to include in our PAK.
-        writer.addDirectory("../assets/more", ["*/.DS_Store", "../assets/more/even-more/catland/", "../assets/more/even-more/cat.txt"], ZIP);
+        writer.addDirectoryRecursive("../assets/more", ["*/.DS_Store", "../assets/more/even-more/catland/", "../assets/more/even-more/cat.txt"], ZIP);
 
         // Now that we've added everything we've wanted, we'll use the `write()` method to give us the bytes
         // of the PAK file, and we'll write it to disk.

@@ -118,7 +118,7 @@ class Writer
             var assets = _readDirectoryRecursively(path);
             for (assetPath in assets)
             {
-                if (filtered(assetPath, exclude))
+                if (exclude != null && filtered(assetPath, exclude))
                 {
                     #if ANTPAK_VERBOSE_WRITER
                     trace('Excluding asset (path: $assetPath)');

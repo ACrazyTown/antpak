@@ -30,7 +30,7 @@ Each entry in the table of contents consists of the following structure:
 idLength      UInt16   (2 bytes)
 id            String   (size is determined by idLength)
 compression   UInt8    (1 byte)
-encryption    UInt8    (1 byte)
+encrypted     UInt8    (1 byte)
 position      Int32    (4 bytes)
 length        Int32    (4 bytes)
 ``` 
@@ -39,9 +39,9 @@ where:
 - `idLength` is the length of the `id` string.
 - `id` is the "path" or "key" to the file, used to access it.
 - `compression` is a number that corresponds to the used compression method. Set to `0` to disable compression on this file. See supported compression methods at the bottom of the document.
-- `encryption` is a number that corresponds to the used encryption method. Set to `0` to disable encryption on this file. See supported encryption methods at the bottom of the document.
+- `encrypted` is a byte bool that determines whether the file will be encrypted using AES. Set to `0` to disable encryption. 
 
-If both `encryption` and `compression` are set, the file will first be compressed, then encrypted.
+If the file wants to be both encrypted and compressed, the file will first be compressed, then encrypted.
 
 You should stop reading the file here, and use the provided positions and lengths from the table to seek and read each file's contents.
 
@@ -54,9 +54,6 @@ data   Bytes   (size is read in the table of contents)
 There is actually not much here, it is just the bytes of each file stored one after another. Use the positions and lengths from the table of contents to seek and read each file's contents.
 
 ## Supported compression methods
+By default, only ZIP compression is available as it is built into the Haxe standard library.
+
 - `1` - ZIP compression, `haxe.zip.Compress` will be used.
-
-## Supported encryption methods
-**NOTE:** ALL encryption methods require the inclusion of the Haxe [crypto](https://lib.haxe.org/p/crypto/) library. If a file is encrypted and the library is not present, an exception will be thrown.
-
-- `1` - AES encryption.

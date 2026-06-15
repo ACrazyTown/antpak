@@ -16,7 +16,7 @@ class PlayState extends FlxState
 		super.create();
 
 		// Init FlxPakAssets
-		// This can be done anywhere, as long as it's done after FlxGame is created.
+		// This can be done anywhere.
 		FlxPakAssets.init();
 
 		// Mount our pak. We'll hold a reference to it only so we can unmount it later.

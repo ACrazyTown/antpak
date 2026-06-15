@@ -17,14 +17,27 @@ import openfl.text.Font;
 @:access(antpak.Pak)
 class FlxPakAssets
 {
-    static var _getAssetUnsafe:(id:String, type:FlxAssetType, useCache:Bool)->Any = null;
-    static var _loadAsset:(id:String, type:FlxAssetType, useCache:Bool)->Future<Any> = null;
+    static var initialized:Bool = false;
+
+    static var _getAssetUnsafe:(id:String, type:FlxAssetType, ?useCache:Bool)->Any = null;
+    static var _loadAsset:(id:String, type:FlxAssetType, ?useCache:Bool)->Future<Any> = null;
     static var _exists:(id:String, ?type:FlxAssetType)->Bool = null;
-    static var _isLocal:(id:String, ?type:FlxAssetType, useCache:Bool)->Bool = null;
+    static var _isLocal:(id:String, ?type:FlxAssetType, ?useCache:Bool)->Bool = null;
     static var _list:(?type:FlxAssetType)->Array<String> = null;
 
+    /**
+     * Initializes the Flixel integration by hooking into `FlxG.assets`.
+     * This method should only be called once, sometime before any assets are retrieved.
+     * 
+     * After this method is called, any calls to `FlxG.assets` will first
+     * check if the asset exists in any of the mounted PAKs, and fall back to the original
+     * `FlxG.assets` method if not.
+     */
     public static function init():Void
     {
+        if (initialized)
+            throw "You can't initialize FlxPakAssets twice, you fool";
+
         // save flixel's methods
         _getAssetUnsafe = FlxG.assets.getAssetUnsafe;
         _loadAsset = FlxG.assets.loadAsset;
@@ -38,6 +51,23 @@ class FlxPakAssets
         FlxG.assets.exists = exists;
         FlxG.assets.isLocal = isLocal;
         FlxG.assets.list = list;
+
+        initialized = true;
+    }
+
+    /**
+     * Gets rid of antpak's hooks into `FlxG.assets` and restores Flixel's original behavior.
+     */
+    public static function deinit():Void
+    {
+        // restore flixel's methods
+        FlxG.assets.getAssetUnsafe = _getAssetUnsafe;
+        FlxG.assets.loadAsset = _loadAsset;
+        FlxG.assets.exists = _exists;
+        FlxG.assets.isLocal = _isLocal;
+        FlxG.assets.list = _list;
+
+        initialized = false;
     }
 
     static function getAssetUnsafe(id:String, type:FlxAssetType, useCache:Bool = true):Any

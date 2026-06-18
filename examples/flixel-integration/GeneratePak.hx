@@ -12,7 +12,8 @@ class GeneratePak
         writer.addDirectoryRecursive("../assets/", null, ZIP);
         final bytes = writer.write();
 
-        // TODO: unhardcode path
-        File.saveBytes("export/hl/bin/assets.pak", bytes);
+        // Write our PAK to a temporary paks/ folder in the root,
+        // from where it will be later copied to the export directory
+        File.saveBytes("./paks/assets.pak", bytes);
     }
 }

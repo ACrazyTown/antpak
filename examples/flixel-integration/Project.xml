@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project xmlns="http://lime.openfl.org/project/1.0.4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://lime.openfl.org/project/1.0.4 http://lime.openfl.org/xsd/project-1.0.4.xsd">
-
+<!-- <project xmlns="http://lime.openfl.org/project/1.0.4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://lime.openfl.org/project/1.0.4 http://lime.openfl.org/xsd/project-1.0.4.xsd"> -->
+<project>
 	<!-- _________________________ Application Settings _________________________ -->
 
 	<app title="antpak Flixel Integration" file="antpak-flixel-integration" main="Main" version="0.0.1" company="ACrazyTown" />
@@ -32,6 +32,13 @@
 	<set name="BUILD_DIR" value="export" />
 	<source path="source" />
 
+	<assets path="../assets" rename="assets"/>
+
+	<!-- Before Lime processes the assets, run our generator to create our PAKs -->
+	<preupdate cmd="haxe gen.hxml"></preupdate>
+	<!-- Copy all the PAKs in the "paks" folder to the export directory-->
+	<assets path="paks" rename="" type="template" />
+
 	<!-- _______________________________ Libraries ______________________________ -->
 
 	<haxelib name="flixel" />
@@ -47,9 +54,7 @@
 	<!--<haxelib name="nape-haxe4" />-->
 
 	<!-- ______________________________ Haxedefines _____________________________ -->
-
-	<!-- TODO: surely there's a better way to do this than invoking a seperate hxml ? -->
-	<postbuild cmd="haxe gen.hxml"></postbuild>
+	
 	<haxedef name="FLX_NO_SAVE" />
 
 	<!--Remove the legacy health system-->

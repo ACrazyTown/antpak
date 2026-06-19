@@ -29,7 +29,10 @@ The asset system first checks if the wanted asset is available in the PAK, and t
 ## TODO
 - [ ] Polish up API
 - [ ] Implement missing features
+    - [ ] Includes in `addDirectoryRecursive()`
+    - [ ] Encryption
+    - [ ] Bake asset type into the PAK (see issue #2)
 - [x] Add example
-- [ ] More robust excludes (wildcard support, etc.)
+- [x] More robust excludes (wildcard support, etc.)
 - [ ] Lime/OpenFL/Flixel integration?
-    - [x] Flixel 
+    - [x] Flixel

@@ -1,3 +1,4 @@
 examples/*/*.pak
 examples/**/export
 tests/
+dump/

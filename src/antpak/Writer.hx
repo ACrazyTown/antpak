@@ -1,5 +1,6 @@
 package antpak;
 
+import antpak.impl.BaseWriter;
 import antpak.Util;
 import antpak.data.WriteEntry;
 import haxe.io.Path;
@@ -19,9 +20,6 @@ using StringTools;
 
 class Writer
 {
-    final HEADER:String = "ANTPAK";
-    final VERSION:Int = 0;
-
     var _entries:Array<WriteEntry>;
 
     public function new() 
@@ -138,131 +136,26 @@ class Writer
      * 
      * @return Bytes representation of the PAK.
      */
-    public function write():Bytes
+    public function write(?version:Int):Bytes
     {
         var bytes:Bytes = null;
+        version ??= Pak.VERSION;
 
         if (_entries.length > 0)
         {
-            #if ANTPAK_VERBOSE_WRITER
-            trace("-- Starting write --");
-            #end
+            var writer:BaseWriter = switch (version)
+            {
+                case 0: new antpak.impl.WriterV0(_entries);
+                default: throw 'Incompatible antpak version ($version)';
+            }
 
-            _mutateFiles();
-
-            var _bytes = new BytesOutput();
-
-            _writeHeader(_bytes);
-            _writeTableOfContents(_bytes);
-            _writeContents(_bytes);
-
-            #if ANTPAK_VERBOSE_WRITER
-            trace('-- Write complete (final size: ${Util.getBytesSize(_bytes.length)}) --');
-            #end
-
-            bytes = _bytes.getBytes();
+            writer.mutateEntryData();
+            bytes = writer.write();
 
             _entries.resize(0);
         }
 
         return bytes;
-    }
-
-    inline function _mutateFiles():Void
-    {
-        #if ANTPAK_VERBOSE_WRITER
-        trace("-- Mutating files --");
-        #end
-
-        for (entry in _entries)
-        {
-            entry.prepareData();
-        }
-    }
-
-    inline function _writeHeader(o:BytesOutput):Void
-    {
-        #if ANTPAK_VERBOSE_WRITER
-        trace('-- Writing header ($HEADER, v$VERSION) --');
-        #end
-
-        o.writeString(HEADER);
-        o.writeByte(VERSION);
-    }
-
-    inline function _writeTableOfContents(o:BytesOutput):Void
-    {
-        #if ANTPAK_VERBOSE_WRITER
-        trace("-- Writing table of contents --");
-        #end
-
-        final headerLength = o.length;
-
-        o.writeUInt16(_entries.length);
-
-        // Get the length of everything, so we can properly calculate the position for packed files
-        var tocLength:Int = 2;
-        for (entry in _entries)
-        {
-            tocLength += 2; // path length
-            tocLength += Bytes.ofString(entry.id).length; // path
-            tocLength++; // i8 (compression)
-            tocLength++; // i8 (encryption)
-            tocLength += 4; // i32 (position)
-            tocLength += 4; // i32 (length)
-        }
-
-        var dataLength = 0;
-        for (entry in _entries)
-        {
-            #if ANTPAK_VERBOSE_WRITER
-            trace('Writing entry (ID: ${entry.id}, compression: ${entry.compression},  encrypted: ${entry.encryptionKey != null})');
-            #end
-
-            _writeString(o, entry.id);
-
-            o.writeByte(entry.compression ?? 0);
-            o.writeByte(entry.encryptionKey == null ? 0 : 1);
-
-            // position of the file
-            final position = headerLength + tocLength + dataLength;
-            o.writeInt32(position);
-
-            // length of the file
-            o.writeInt32(entry.data.length);
-
-            dataLength += entry.data.length;
-        }
-    }
-
-    inline function _writeContents(o:BytesOutput):Void
-    {
-        #if ANTPAK_VERBOSE_WRITER
-        trace('-- Writing contents --');
-        #end
-
-        for (entry in _entries)
-        {
-            #if ANTPAK_VERBOSE_WRITER
-            trace('Writing bytes (ID: ${entry.id}, size: ${Util.getBytesSize(entry.data.length)}, total PAK size: ${Util.getBytesSize(o.length + entry.data.length)})');
-            #end
-
-            o.writeFullBytes(entry.data, 0, entry.data.length);
-        }
-    }
-
-    /**
-     * Helper that writes the length (in bytes) of the string,
-     * and then the string into a `BytesOutput`
-     * 
-     * @param o The `BytesOutput` to write into
-     * @param s The string to write
-     */
-    function _writeString(o:BytesOutput, s:String):Void
-    {
-        var b = Bytes.ofString(s);
-        o.writeUInt16(b.length);
-        o.writeString(s);
     }
 
     // TODO: wait im kinda dum lol need to clean this up

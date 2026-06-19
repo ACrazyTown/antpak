@@ -1,5 +1,8 @@
 package antpak;
 
+import haxe.ds.StringMap;
+import antpak.impl.BaseReader;
+import antpak.impl.ReaderV0;
 import antpak.data.ReadEntry;
 import haxe.io.Path;
 import haxe.zip.Uncompress;
@@ -35,6 +38,7 @@ class Pak
      * @param stream Whether the `Pak` should be streamed or not.
      * @return Pak
      */
+    @:deprecated("Pak.mount() is deprecated. Use PakFileSystem.mount() instead.")
     public static function mount(path:String, stream:Bool):Pak
     {
         var p = new Pak(path, stream);
@@ -47,6 +51,7 @@ class Pak
      * 
      * @param pak The `Pak` to close.
      */
+    @:deprecated("Pak.unmount() is deprecated. Use PakFileSystem.unmount() instead.")
     public static function unmount(pak:Pak):Void
     {
         pak.close();
@@ -54,16 +59,23 @@ class Pak
         mounted.remove(pak);
     }
 
+    /**
+     * The file path to the PAK.
+     */
+    public var path(default, null):String;
+
     var _file:FileInput;
+    var _reader:BaseReader;
+
     var _version:Int = 0;
     var _stream:Bool;
 
-    var _entries:Map<String, ReadEntry>;
+    var _entries:Map<String, ReadEntry> = [];
 
     private function new(path:String, stream:Bool):Void 
     {
+        this.path = path;
         _stream = stream;
-        _entries = [];
 
         _file = File.read(path);
 
@@ -75,27 +87,13 @@ class Pak
 
         _version = _file.readByte();
 
-        // read table of contents
-        var numEntries = _file.readUInt16();
-        for (i in 0...numEntries)
+        _reader = switch (_version)
         {
-            var idLen = _file.readUInt16();
-            var id = _file.readString(idLen);
-
-            var compression = _file.readByte();
-            var encryption = _file.readByte();
-
-            var position = _file.readInt32();
-            var length = _file.readInt32();
-
-            var entry = new ReadEntry(id, compression, null, position, length);
-
-            // also load the files now if we're not streaming
-            if (!stream)
-                _loadEntry(entry);
-
-            _entries[id] = entry;
+            case 0: new ReaderV0(_file);
+            default: throw 'Incompatible antpak version ($_version)!';
         }
+
+        _entries = _reader.readEntries(stream);
 
         if (!stream)
             close();
@@ -173,17 +171,13 @@ class Pak
      */
     public function get(path:String):Bytes
     {
-        if (!has(path))
-            return null;
-
         var e = _entries.get(_normalizeAssetID(path));
-        if (e?.data != null)
+        if (e != null)
         {
-            return e.data;
-        }
-        else if (_stream)
-        {
-            return _loadEntry(e);
+            if (e.data != null)
+                return e.data;
+            else if (_stream)
+                return _reader.loadEntryData(e);
         }
 
         return null;
@@ -197,23 +191,8 @@ class Pak
      */
     public function remove(path:String):Void
     {
-        if (!has(path))
-            return;
-
         var e = _entries.get(_normalizeAssetID(path));
-        e.unload();
-    }
-
-    function _loadEntry(e:ReadEntry):Bytes
-    {
-        var last = _file.tell();
-        _file.seek(e.position, SeekBegin);
-        var data = _file.read(e.length);
-        _file.seek(last, SeekBegin);
-
-        e.prepareData(data);
-
-        return e.data;
+        e?.unload();
     }
 
     function _normalizeAssetID(id:String):String

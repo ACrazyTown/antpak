@@ -9,7 +9,7 @@ Also wait it's still a work in progress so you probably shouldn't use it, also w
 ## Integration with frameworks
 
 See:
-- [HaxeFlixel](examples\flixel-integration\README.md)
+- [HaxeFlixel](examples/flixel-integration/README.md)
 
 ## TODO
 - [ ] Polish up API

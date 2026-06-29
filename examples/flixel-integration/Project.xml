@@ -31,11 +31,6 @@
 	<set name="BUILD_DIR" value="export" />
 	<source path="source" />
 
-	<!-- Before Lime processes the assets, run our generator to create our PAKs -->
-	<preupdate cmd="haxe gen.hxml"></preupdate>
-	<!-- Copy all the PAKs in the "paks" folder to the export directory-->
-	<assets path="paks" rename="" />
-
 	<!-- _______________________________ Libraries ______________________________ -->
 
 	<haxelib name="flixel" />

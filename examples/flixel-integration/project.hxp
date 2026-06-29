@@ -1,0 +1,48 @@
+import hxp.*;
+import lime.tools.HXProject;
+import lime.tools.ProjectXMLParser;
+import sys.FileSystem;
+import sys.io.File;
+import antpak.Writer;
+
+// IMPORTANT: Tell HXP to include antpak as an accessible library
+@:compiler("-lib")
+@:compiler("antpak")
+class Project extends HXProject
+{
+    public function new()
+    {
+        super();
+
+        // Generate our PAKs
+        createAssetsPak();
+        
+        // After our work is done, run the Project.xml! 
+        merge(new ProjectXMLParser("Project.xml"));
+    }
+
+    /**
+     * Generates .pak files from the assets directory, and tells Lime
+     * to copy them over to the export directory.
+     */
+    function createAssetsPak()
+    {
+        // Create our paks directory where we'll store pak files until
+        // they get copied over to the export directory.
+        if (!FileSystem.exists("paks"))
+            FileSystem.createDirectory("paks");
+
+        // Here we're going to generate a single PAK made from contents in the assets directory. 
+        var writer:Writer = new Writer();
+        writer.addDirectoryRecursive("../assets/", null, ZIP);
+        final bytes = writer.write();
+
+        // Write our PAK to a temporary paks/ folder in the root,
+        // from where it will be later copied to the export directory
+        File.saveBytes("paks/assets.pak", bytes);
+
+        // Tell Lime to include all of the paks in the paks directory, but rename them
+        // so they get copied in the root, right next to the executable
+        includeAssets("paks", "");
+    }
+}

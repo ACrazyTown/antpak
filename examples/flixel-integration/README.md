@@ -12,6 +12,9 @@ First things first, make sure you've installed the `antpak` library: `haxelib gi
 
 ## Generating the PAKs
 ### If you're using Project.xml:
+> [!IMPORTANT]
+> This **requires** Lime 8.4.0+ as it fixes an issue which stops you from compiling the game when you combine HXP and XML projects.
+
 Copy over [`project.hxp`](project.hxp) to the root of your project, next to Project.xml.
 The [HXP format](https://lime.openfl.org/docs/project-files/hxp-format/) is essentially the same thing as Project.xml but written using Haxe. It is prioritized above XML and therefore will run before it. We use this to our advantage to run a script that generates the PAK file(s) and tells Lime to copy them over to the export directory, before running the Project.xml.
 

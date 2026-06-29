@@ -8,6 +8,8 @@ The example project generates a single PAK file from the `assets/` directory in 
 > [!NOTE]
 > Due to current limitations, PAKs do not have an associated asset type. For example, if you try to query a list of assets with the `MUSIC` type, you will instead get a list of all assets in the PAK. You can work around this by filtering based on the file extension.
 
+First things first, make sure you've installed the `antpak` library: `haxelib git antpak https://github.com/ACrazyTown/antpak`.
+
 ## Generating the PAKs
 ### If you're using Project.xml:
 Copy over [`project.hxp`](project.hxp) to the root of your project, next to Project.xml.
@@ -36,11 +38,14 @@ Copy over the `createAssetsPak()` method from the example hxp file. You should c
 
 <sup>This is the part that's HaxeFlixel only, for now... sorry!</sup>
 
-After the game builds with the PAKs included, call
+Make sure you've included the `antpak` library into your project!
+- `<haxelib name="antpak" />` if you're using Project.xml
+- `haxelibs.push(new Haxelib("antpak"))` if you're using Project.hxp
+
+In your project's source code, before any calls to `FlxG.assets` are made, call
 ```haxe
 antpak.integration.FlxPakAssets.init();
 ```
-somewhere in your code, before any calls to `FlxG.assets` are made!
 
 `FlxPakAssets` hijacks the `FlxG.assets` method with its own custom methods, which first check if the wanted asset is available in any of the mounted PAKs, before falling back to the original methods. 
 
